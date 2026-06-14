@@ -1,5 +1,6 @@
 export * from "./enums";
 export * from "./primitives";
+export * from "./currency-metadata";
 export * from "./rate";
 export * from "./money";
 export * from "./policy";

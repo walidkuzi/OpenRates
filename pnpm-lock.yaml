@@ -33,6 +33,8 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.21)
 
+  packages/cache: {}
+
   packages/core:
     dependencies:
       '@openrates/schemas':
@@ -74,6 +76,28 @@ importers:
       '@openrates/schemas':
         specifier: workspace:*
         version: link:../schemas
+
+  packages/router:
+    dependencies:
+      '@openrates/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@openrates/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openrates/currency-metadata':
+        specifier: workspace:*
+        version: link:../currency-metadata
+      '@openrates/provider-interface':
+        specifier: workspace:*
+        version: link:../provider-interface
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      '@openrates/provider-frankfurter':
+        specifier: workspace:*
+        version: link:../provider-frankfurter
 
   packages/schemas:
     dependencies:

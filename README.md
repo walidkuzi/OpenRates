@@ -33,9 +33,12 @@ Implemented so far:
   (`@openrates/provider-interface`)
 - Frankfurter adapter for official reference rates, with weekend and strict-date handling
   (`@openrates/provider-frankfurter`)
+- Caching with an in-memory LRU and a pluggable Redis store (`@openrates/cache`)
+- Rate engine that resolves currencies, selects providers, caches, normalizes, and falls
+  back visibly, exposing end-to-end conversion (`@openrates/router`)
 
-Planned: rate router and cache, REST API with OpenAPI, MCP server with six tools,
-TypeScript SDK, CLI, documentation site, and a web playground.
+Planned: REST API with OpenAPI, MCP server with six tools, TypeScript SDK, CLI,
+documentation site, and a web playground.
 
 ## Intended usage
 
@@ -78,6 +81,8 @@ packages/
   core/                Money engine, rate math, freshness, confidence, fees
   provider-interface/  Provider contract, capabilities, health, contract tests
   provider-frankfurter/Frankfurter adapter for official reference rates
+  cache/               In-memory LRU and pluggable Redis cache stores
+  router/              Provider registry, selection, fallback, and the rate engine
 ```
 
 Additional packages and applications are added as later phases land.

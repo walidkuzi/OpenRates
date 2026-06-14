@@ -246,6 +246,19 @@ export class RateEngine {
         cacheInfo = { hit: false };
       }
 
+      if (isHistorical && datePolicy === "strict" && providerRate.effectiveDate !== dateKey) {
+        lastError = new OpenRatesError({
+          code: "STRICT_DATE_NOT_AVAILABLE",
+          message: `No rate was published for ${base}/${quote} on ${dateKey}.`,
+          details: { requestedDate: dateKey, effectiveDate: providerRate.effectiveDate },
+          suggestion: "Retry with datePolicy 'previous_available' to use the prior rate.",
+        });
+        if (!allowFallback) {
+          throw lastError;
+        }
+        continue;
+      }
+
       const capabilities = await this.registry.capabilities(provider.id);
       const rate = this.normalize({
         providerRate,

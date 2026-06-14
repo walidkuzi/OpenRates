@@ -36,9 +36,11 @@ Implemented so far:
 - Caching with an in-memory LRU and a pluggable Redis store (`@openrates/cache`)
 - Rate engine that resolves currencies, selects providers, caches, normalizes, and falls
   back visibly, exposing end-to-end conversion (`@openrates/router`)
+- REST API on Fastify with standard envelopes, request IDs, security headers, optional auth
+  and rate limiting, OpenAPI 3.1, and interactive docs (`@openrates/api`)
 
-Planned: REST API with OpenAPI, MCP server with six tools, TypeScript SDK, CLI,
-documentation site, and a web playground.
+Planned: MCP server with six tools, TypeScript SDK, CLI, documentation site, and a web
+playground.
 
 ## Intended usage
 
@@ -83,6 +85,8 @@ packages/
   provider-frankfurter/Frankfurter adapter for official reference rates
   cache/               In-memory LRU and pluggable Redis cache stores
   router/              Provider registry, selection, fallback, and the rate engine
+apps/
+  api/                 Fastify REST API with OpenAPI and interactive docs
 ```
 
 Additional packages and applications are added as later phases land.

@@ -29,9 +29,13 @@ Implemented so far:
 - Currency metadata, alias resolution, and search (`@openrates/currency-metadata`)
 - Decimal money engine, rate math, freshness classifier, confidence calculator, and fee
   engine (`@openrates/core`)
+- Provider contract with a reusable, fixture-based contract test suite
+  (`@openrates/provider-interface`)
+- Frankfurter adapter for official reference rates, with weekend and strict-date handling
+  (`@openrates/provider-frankfurter`)
 
-Planned: Frankfurter provider, rate router and cache, REST API with OpenAPI, MCP server
-with six tools, TypeScript SDK, CLI, documentation site, and a web playground.
+Planned: rate router and cache, REST API with OpenAPI, MCP server with six tools,
+TypeScript SDK, CLI, documentation site, and a web playground.
 
 ## Intended usage
 
@@ -72,6 +76,8 @@ packages/
   observability/       Pino logging with secret redaction
   currency-metadata/   Currency catalogue, aliases, and search
   core/                Money engine, rate math, freshness, confidence, fees
+  provider-interface/  Provider contract, capabilities, health, contract tests
+  provider-frankfurter/Frankfurter adapter for official reference rates
 ```
 
 Additional packages and applications are added as later phases land.

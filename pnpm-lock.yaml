@@ -194,6 +194,16 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
 
+  packages/sdk-typescript:
+    dependencies:
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      '@openrates/api':
+        specifier: workspace:*
+        version: link:../../apps/api
+
 packages:
 
   '@ampproject/remapping@2.3.0':

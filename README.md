@@ -40,8 +40,12 @@ Implemented so far:
   and rate limiting, OpenAPI 3.1, and interactive docs (`@openrates/api`)
 - MCP server with six tools, nine resources, agent instructions, and both stdio and
   Streamable HTTP transports (`@openrates/mcp`)
+- Typed TypeScript SDK with error classes, retries, and AbortSignal support
+  (`@openrates/sdk`)
+- CLI for rates, conversions, series, currencies, providers, and a doctor check
+  (`@openrates/cli`)
 
-Planned: TypeScript SDK, CLI, documentation site, and a web playground.
+Planned: documentation site and a web playground.
 
 ## Intended usage
 
@@ -86,6 +90,8 @@ packages/
   provider-frankfurter/Frankfurter adapter for official reference rates
   cache/               In-memory LRU and pluggable Redis cache stores
   router/              Provider registry, selection, fallback, and the rate engine
+  sdk-typescript/      Typed REST client (@openrates/sdk)
+  cli/                 Command-line interface (@openrates/cli)
 apps/
   api/                 Fastify REST API with OpenAPI and interactive docs
   mcp/                 MCP server (stdio + Streamable HTTP) exposing six tools

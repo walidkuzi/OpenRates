@@ -1,0 +1,29 @@
+{
+  "name": "@openrates/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "bin": {
+    "openrates": "./dist/cli.js"
+  },
+  "main": "./src/cli.ts",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@openrates/cache": "workspace:*",
+    "@openrates/core": "workspace:*",
+    "@openrates/currency-metadata": "workspace:*",
+    "@openrates/mcp": "workspace:*",
+    "@openrates/provider-frankfurter": "workspace:*",
+    "@openrates/provider-interface": "workspace:*",
+    "@openrates/router": "workspace:*",
+    "@openrates/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

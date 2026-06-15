@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "openrates": {
+      "command": "npx",
+      "args": ["-y", "@openrates/mcp", "--stdio"]
+    }
+  }
+}

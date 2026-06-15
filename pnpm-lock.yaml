@@ -124,6 +124,37 @@ importers:
 
   packages/cache: {}
 
+  packages/cli:
+    dependencies:
+      '@openrates/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@openrates/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openrates/currency-metadata':
+        specifier: workspace:*
+        version: link:../currency-metadata
+      '@openrates/mcp':
+        specifier: workspace:*
+        version: link:../../apps/mcp
+      '@openrates/provider-frankfurter':
+        specifier: workspace:*
+        version: link:../provider-frankfurter
+      '@openrates/provider-interface':
+        specifier: workspace:*
+        version: link:../provider-interface
+      '@openrates/router':
+        specifier: workspace:*
+        version: link:../router
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+
   packages/core:
     dependencies:
       '@openrates/schemas':
@@ -193,6 +224,16 @@ importers:
       zod:
         specifier: ^3.24.1
         version: 3.25.76
+
+  packages/sdk-typescript:
+    dependencies:
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      '@openrates/api':
+        specifier: workspace:*
+        version: link:../../apps/api
 
 packages:
 

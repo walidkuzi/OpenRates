@@ -1,5 +1,5 @@
 import { formatRate, inverseRate } from "@openrates/core";
-import type { ConversionResult, RateResult, SeriesResult } from "./types";
+import type { CompareResult, ConversionResult, RateResult, SeriesResult } from "./types";
 
 export type ResponseDetail = "compact" | "standard" | "full";
 
@@ -137,6 +137,63 @@ export function shapeConversion(
     },
     route: result.route,
     cache: result.cache,
+  };
+}
+
+export function shapeComparison(
+  result: CompareResult,
+  detail: ResponseDetail = "standard",
+): Record<string, unknown> {
+  if (detail === "compact") {
+    return {
+      base: result.base,
+      quote: result.quote,
+      date: result.date,
+      disagreement: result.disagreement,
+      providers: result.results.map((r) => ({
+        provider: r.provider,
+        rate: formatRate(r.rate),
+        rateType: r.rateType,
+        freshness: r.freshnessClass,
+      })),
+      ...(result.failures.length > 0 ? { failures: result.failures.length } : {}),
+    };
+  }
+
+  const standard: Record<string, unknown> = {
+    base: result.base,
+    quote: result.quote,
+    date: result.date,
+    disagreement: result.disagreement,
+    ...(result.median !== undefined ? { median: formatRate(result.median) } : {}),
+    ...(result.maxDifferencePercent !== undefined
+      ? { maxDifferencePercent: result.maxDifferencePercent }
+      : {}),
+    providers: result.results.map((r) => ({
+      provider: r.provider,
+      rate: formatRate(r.rate),
+      rateType: r.rateType,
+      effectiveDate: r.effectiveDate,
+      freshness: r.freshnessClass,
+      ...(r.differencePercent !== undefined ? { differencePercent: r.differencePercent } : {}),
+    })),
+    failures: result.failures,
+  };
+
+  if (detail === "standard") return standard;
+
+  return {
+    ...standard,
+    providers: result.results.map((r) => ({
+      provider: r.provider,
+      rate: r.rate,
+      rateFormatted: formatRate(r.rate),
+      rateType: r.rateType,
+      effectiveDate: r.effectiveDate,
+      freshness: r.freshnessClass,
+      inverseRate: safeInverse(r.rate),
+      ...(r.differencePercent !== undefined ? { differencePercent: r.differencePercent } : {}),
+    })),
   };
 }
 

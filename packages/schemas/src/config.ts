@@ -13,6 +13,10 @@ export const configSchema = z.object({
   frankfurterBaseUrl: z.string().url(),
   frankfurterTimeoutMs: z.number().int().positive(),
 
+  oxrApiKey: z.string().optional(),
+  oxrBaseUrl: z.string().url().optional(),
+  oxrTimeoutMs: z.number().int().positive().optional(),
+
   cacheDriver: z.enum(["memory", "redis"]),
   memoryCacheMaxItems: z.number().int().positive(),
   redisUrl: z.string().optional(),
@@ -75,6 +79,21 @@ export function loadConfig(env: EnvRecord = process.env): OpenRatesConfig {
 
     frankfurterBaseUrl: env.FRANKFURTER_BASE_URL ?? "https://api.frankfurter.dev",
     frankfurterTimeoutMs: readNumber(env.FRANKFURTER_TIMEOUT_MS, 5000),
+
+    oxrApiKey:
+      env.OPENRATES_PROVIDER_OPENEXCHANGERATES_API_KEY !== undefined &&
+      env.OPENRATES_PROVIDER_OPENEXCHANGERATES_API_KEY.length > 0
+        ? env.OPENRATES_PROVIDER_OPENEXCHANGERATES_API_KEY
+        : undefined,
+    oxrBaseUrl:
+      env.OPENRATES_PROVIDER_OPENEXCHANGERATES_BASE_URL !== undefined &&
+      env.OPENRATES_PROVIDER_OPENEXCHANGERATES_BASE_URL.length > 0
+        ? env.OPENRATES_PROVIDER_OPENEXCHANGERATES_BASE_URL
+        : undefined,
+    oxrTimeoutMs:
+      env.OPENRATES_PROVIDER_OPENEXCHANGERATES_TIMEOUT_MS !== undefined
+        ? readNumber(env.OPENRATES_PROVIDER_OPENEXCHANGERATES_TIMEOUT_MS, 5000)
+        : undefined,
 
     cacheDriver: env.OPENRATES_CACHE_DRIVER ?? "memory",
     memoryCacheMaxItems: readNumber(env.OPENRATES_MEMORY_CACHE_MAX_ITEMS, 10000),

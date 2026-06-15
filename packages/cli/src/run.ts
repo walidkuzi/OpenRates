@@ -218,7 +218,9 @@ async function cmdDoctor(deps: RunDeps, flags: Flags): Promise<number> {
     emitJson(deps, { checks });
   } else {
     for (const check of checks) {
-      deps.out(`${check.ok ? "ok  " : "FAIL"} ${check.name}${check.detail ? ` (${check.detail})` : ""}`);
+      deps.out(
+        `${check.ok ? "ok  " : "FAIL"} ${check.name}${check.detail ? ` (${check.detail})` : ""}`,
+      );
     }
   }
   return checks.every((check) => check.ok) ? 0 : 1;

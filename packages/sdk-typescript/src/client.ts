@@ -84,7 +84,9 @@ function withTimeout(timeoutMs: number, external?: AbortSignal) {
 }
 
 function isSuccessEnvelope(value: unknown): value is { success: true; data: unknown } {
-  return typeof value === "object" && value !== null && (value as { success?: unknown }).success === true;
+  return (
+    typeof value === "object" && value !== null && (value as { success?: unknown }).success === true
+  );
 }
 
 function toApiError(payload: unknown, status: number): OpenRatesApiError {
@@ -94,7 +96,13 @@ function toApiError(payload: unknown, status: number): OpenRatesApiError {
     (payload as { success?: unknown }).success === false
   ) {
     const envelope = payload as {
-      error?: { code?: string; message?: string; retryable?: boolean; details?: Record<string, unknown>; suggestion?: string };
+      error?: {
+        code?: string;
+        message?: string;
+        retryable?: boolean;
+        details?: Record<string, unknown>;
+        suggestion?: string;
+      };
       requestId?: string;
     };
     const error = envelope.error ?? {};
@@ -236,7 +244,9 @@ export class OpenRatesClient {
         }
         const wrapped = new OpenRatesApiError({
           code: timeout.timedOut() ? "PROVIDER_TIMEOUT" : "PROVIDER_UNAVAILABLE",
-          message: timeout.timedOut() ? "The request timed out." : "The request failed to reach the server.",
+          message: timeout.timedOut()
+            ? "The request timed out."
+            : "The request failed to reach the server.",
           status: 0,
           retryable: true,
         });

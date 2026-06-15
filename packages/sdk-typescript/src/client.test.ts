@@ -115,9 +115,18 @@ describe("OpenRatesClient transport behavior", () => {
     const fetch: SdkFetch = async () => {
       calls += 1;
       if (calls < 2) {
-        return jsonResponse({ success: false, error: { code: "PROVIDER_UNAVAILABLE", message: "down", retryable: true } }, 502);
+        return jsonResponse(
+          {
+            success: false,
+            error: { code: "PROVIDER_UNAVAILABLE", message: "down", retryable: true },
+          },
+          502,
+        );
       }
-      return jsonResponse({ success: true, data: { ok: true }, requestId: "req_1", generatedAt: "now" }, 200);
+      return jsonResponse(
+        { success: true, data: { ok: true }, requestId: "req_1", generatedAt: "now" },
+        200,
+      );
     };
     const client = new OpenRatesClient({ baseUrl: "http://test.local", fetch, retries: 2 });
     const result = (await client.health()) as { ok: boolean };
@@ -129,7 +138,10 @@ describe("OpenRatesClient transport behavior", () => {
     let calls = 0;
     const fetch: SdkFetch = async () => {
       calls += 1;
-      return jsonResponse({ success: false, error: { code: "INVALID_AMOUNT", message: "bad", retryable: false } }, 400);
+      return jsonResponse(
+        { success: false, error: { code: "INVALID_AMOUNT", message: "bad", retryable: false } },
+        400,
+      );
     };
     const client = new OpenRatesClient({ baseUrl: "http://test.local", fetch, retries: 2 });
     await expect(client.convert({ amount: "x", from: "USD", to: "EUR" })).rejects.toBeInstanceOf(
@@ -143,7 +155,12 @@ describe("OpenRatesClient transport behavior", () => {
       new Promise<SdkResponse>((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
       });
-    const client = new OpenRatesClient({ baseUrl: "http://test.local", fetch, timeoutMs: 5, retries: 0 });
+    const client = new OpenRatesClient({
+      baseUrl: "http://test.local",
+      fetch,
+      timeoutMs: 5,
+      retries: 0,
+    });
     await expect(client.health()).rejects.toMatchObject({ code: "PROVIDER_TIMEOUT" });
   });
 });

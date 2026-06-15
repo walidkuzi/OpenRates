@@ -79,3 +79,39 @@ export interface SeriesResult {
   points: SeriesPoint[];
   cache: CacheInfo;
 }
+
+export interface CompareQuery {
+  base: string;
+  quote: string;
+  date?: string;
+  providers?: string[];
+  mode?: RateMode;
+  maxProviders?: number;
+  now?: string;
+}
+
+export interface ProviderQuote {
+  provider: string;
+  rate: string;
+  rateType: string;
+  effectiveDate: string;
+  freshnessClass: string;
+  differencePercent?: string;
+}
+
+export interface ProviderFailure {
+  provider: string;
+  code: string;
+  message: string;
+}
+
+export interface CompareResult {
+  base: string;
+  quote: string;
+  date: string;
+  results: ProviderQuote[];
+  failures: ProviderFailure[];
+  median?: string;
+  maxDifferencePercent?: string;
+  disagreement: boolean;
+}

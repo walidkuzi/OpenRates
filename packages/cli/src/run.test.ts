@@ -77,7 +77,10 @@ describe("CLI run", () => {
 
   it("prints a series", async () => {
     const { out, deps } = harness();
-    const code = await run(["series", "USD", "EUR", "--from", "2026-06-10", "--to", "2026-06-12"], deps);
+    const code = await run(
+      ["series", "USD", "EUR", "--from", "2026-06-10", "--to", "2026-06-12"],
+      deps,
+    );
     expect(code).toBe(0);
     expect(out.join("\n")).toContain("2026-06-10");
   });

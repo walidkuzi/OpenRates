@@ -91,6 +91,8 @@ packages/
   provider-frankfurter/Frankfurter adapter for official reference rates
   cache/               In-memory LRU and pluggable Redis cache stores
   router/              Provider registry, selection, fallback, and the rate engine
+  sdk-typescript/      Typed REST client (@openrates/sdk)
+  cli/                 Command-line interface (@openrates/cli)
 apps/
   api/                 Fastify REST API with OpenAPI and interactive docs
   mcp/                 MCP server (stdio + Streamable HTTP) exposing six tools

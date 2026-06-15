@@ -28,6 +28,7 @@
     "@openrates/observability": "workspace:*",
     "@openrates/provider-frankfurter": "workspace:*",
     "@openrates/provider-interface": "workspace:*",
+    "@openrates/provider-openexchangerates": "workspace:*",
     "@openrates/router": "workspace:*",
     "@openrates/schemas": "workspace:*",
     "@scalar/fastify-api-reference": "^1.25.0",

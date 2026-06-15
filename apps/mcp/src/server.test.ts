@@ -118,7 +118,7 @@ describe("MCP server", () => {
       arguments: { base: "USD", quote: "EUR" },
     });
     const data = JSON.parse(textOf(result));
-    expect(data.results[0].provider).toBe("frankfurter");
+    expect(data.providers[0].provider).toBe("frankfurter");
     expect(data.disagreement).toBe(false);
   });
 

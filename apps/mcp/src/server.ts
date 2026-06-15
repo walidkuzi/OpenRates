@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listCurrencies, resolveCurrency, searchCurrencies } from "@openrates/currency-metadata";
-import { type RateEngine, shapeConversion, shapeRate, shapeSeries } from "@openrates/router";
+import { type RateEngine, shapeComparison, shapeConversion, shapeRate, shapeSeries } from "@openrates/router";
 import {
   type OpenRatesConfig,
   OpenRatesError,
@@ -235,7 +235,7 @@ export function createMcpServer(deps: McpServerDeps): McpServer {
           },
           config.providerDisagreementPercent,
         );
-        return ok(result);
+        return ok(shapeComparison(result, "standard"));
       } catch (error) {
         return fail(error);
       }

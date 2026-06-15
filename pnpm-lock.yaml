@@ -62,6 +62,9 @@ importers:
       '@openrates/provider-interface':
         specifier: workspace:*
         version: link:../../packages/provider-interface
+      '@openrates/provider-openexchangerates':
+        specifier: workspace:*
+        version: link:../../packages/provider-openexchangerates
       '@openrates/router':
         specifier: workspace:*
         version: link:../../packages/router
@@ -114,6 +117,9 @@ importers:
       '@openrates/provider-interface':
         specifier: workspace:*
         version: link:../../packages/provider-interface
+      '@openrates/provider-openexchangerates':
+        specifier: workspace:*
+        version: link:../../packages/provider-openexchangerates
       '@openrates/router':
         specifier: workspace:*
         version: link:../../packages/router
@@ -135,6 +141,37 @@ importers:
         version: 5.4.21(@types/node@22.19.21)
 
   packages/cache: {}
+
+  packages/cli:
+    dependencies:
+      '@openrates/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@openrates/core':
+        specifier: workspace:*
+        version: link:../core
+      '@openrates/currency-metadata':
+        specifier: workspace:*
+        version: link:../currency-metadata
+      '@openrates/mcp':
+        specifier: workspace:*
+        version: link:../../apps/mcp
+      '@openrates/provider-frankfurter':
+        specifier: workspace:*
+        version: link:../provider-frankfurter
+      '@openrates/provider-interface':
+        specifier: workspace:*
+        version: link:../provider-interface
+      '@openrates/router':
+        specifier: workspace:*
+        version: link:../router
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
 
   packages/core:
     dependencies:
@@ -177,6 +214,25 @@ importers:
       '@openrates/schemas':
         specifier: workspace:*
         version: link:../schemas
+
+  packages/provider-openexchangerates:
+    dependencies:
+      '@openrates/provider-interface':
+        specifier: workspace:*
+        version: link:../provider-interface
+      '@openrates/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      decimal.js:
+        specifier: ^10.4.3
+        version: 10.6.0
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.21)
 
   packages/router:
     dependencies:

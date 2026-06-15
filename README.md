@@ -44,8 +44,9 @@ Implemented so far:
   (`@openrates/sdk`)
 - CLI for rates, conversions, series, currencies, providers, and a doctor check
   (`@openrates/cli`)
+- Documentation site, web playground, examples, and open-source governance files
 
-Planned: documentation site and a web playground.
+Planned: market provider framework, Docker image, agent evaluation suite, and release automation.
 
 ## Intended usage
 
@@ -95,9 +96,14 @@ packages/
 apps/
   api/                 Fastify REST API with OpenAPI and interactive docs
   mcp/                 MCP server (stdio + Streamable HTTP) exposing six tools
+  docs/                VitePress documentation site
+  playground/          Web playground for interactive testing
+examples/
+  claude-code/         Claude Code MCP configuration
+  openai-responses/    OpenAI Responses API integration guide
+  node/                Node.js SDK example
+  docker/              Docker and Docker Compose setup
 ```
-
-Additional packages and applications are added as later phases land.
 
 ## Safety promise
 

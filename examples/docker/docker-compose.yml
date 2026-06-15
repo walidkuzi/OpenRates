@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  openrates:
+    image: ghcr.io/openrates/openrates-agent:latest
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      OPENRATES_DEFAULT_PROVIDER: frankfurter
+      FRANKFURTER_BASE_URL: https://api.frankfurter.dev
+      FRANKFURTER_TIMEOUT_MS: "5000"
+      OPENRATES_LOG_LEVEL: info
+      OPENRATES_LOG_AMOUNTS: "false"
+      # Uncomment to enable Redis caching:
+      # OPENRATES_CACHE_DRIVER: redis
+      # REDIS_URL: redis://cache:6379/0
+      # Uncomment to enable API key authentication:
+      # OPENRATES_API_AUTH_ENABLED: "true"
+      # OPENRATES_API_KEYS: "sk_your_key_here"
+      # Uncomment to enable rate limiting:
+      # OPENRATES_RATE_LIMIT_ENABLED: "true"
+      # OPENRATES_RATE_LIMIT_PER_MINUTE: "120"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Optional: Redis for distributed caching across multiple instances.
+  # Uncomment this service and the REDIS_URL env var above to enable it.
+  # cache:
+  #   image: redis:7-alpine
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   restart: unless-stopped
+
+# volumes:
+#   redis_data:

@@ -1,0 +1,392 @@
+# OpenRates Agent Gateway — Full Technical Reference
+
+OpenRates gives AI agents and applications trustworthy current and historical currency
+exchange rates. Every result includes its source, effective date, freshness classification,
+rate type, confidence score, and rounding details. Official daily reference rates are
+explicitly never labeled as live market rates.
+
+## Architecture
+
+Monorepo packages:
+
+- @openrates/schemas — Zod schemas, error model, API envelopes, config validation
+- @openrates/observability — Pino logging with secret redaction
+- @openrates/currency-metadata — Currency catalogue, aliases, and search
+- @openrates/core — Money arithmetic, rate math, freshness, confidence, fees
+- @openrates/provider-interface — Provider contract and reusable contract test suite
+- @openrates/provider-frankfurter — Frankfurter adapter for ECB official rates
+- @openrates/cache — In-memory LRU and pluggable Redis store
+- @openrates/router — Provider registry, selection, fallback, and rate engine
+- @openrates/api — Fastify REST API with OpenAPI 3.1 and interactive docs
+- @openrates/mcp — MCP server with six tools, nine resources, two transports
+- @openrates/sdk — TypeScript client with retries and AbortSignal support
+- @openrates/cli — CLI with rate, convert, series, currencies, doctor commands
+
+## MCP server
+
+Primary interface for agents. Supports stdio (local) and Streamable HTTP (remote).
+
+### Tools
+
+**convert_currency**
+Input: { amount: string, from: string, to: string, date?: string,
+  mode?: "official"|"market"|"auto", useCase?: string,
+  datePolicy?: "previous_available"|"strict", allowFallback?: boolean,
+  maxAgeSeconds?: number, fixedFee?: string, percentageFee?: string,
+  spreadPercentage?: string, responseDetail?: "compact"|"standard"|"full" }
+Output: conversion result with rate, convertedAmount, rateType, effectiveDate,
+  provider, freshnessClass, isLive, confidenceScore, warnings, disclaimer
+
+**get_exchange_rate**
+Input: { base: string, quote: string, date?: string, mode?: string,
+  provider?: string, useCase?: string, datePolicy?: string,
+  allowFallback?: boolean, maxAgeSeconds?: number,
+  responseDetail?: "compact"|"standard"|"full" }
+Output: normalized rate with all metadata
+
+**get_exchange_rate_series**
+Input: { base: string, quote: string, startDate: string, endDate: string,
+  interval?: "day"|"week"|"month", mode?: string, provider?: string,
+  fillPolicy?: "none"|"previous", responseDetail?: string }
+Output: series with points array; each point has date, rate, filled flag
+
+**list_currencies**
+Input: { query?: string, status?: "active"|"retired"|"all",
+  provider?: string, limit?: number }
+Output: array of currencies with code, name, minorUnits, status, aliases
+
+**compare_exchange_rate_providers**
+Input: { base: string, quote: string, date?: string,
+  providers?: string[], mode?: string, maxProviders?: number }
+Output: per-provider results with rate, confidence, freshness; median calculation;
+  disagreement flag if rates diverge beyond OPENRATES_PROVIDER_DISAGREEMENT_PERCENT
+
+**explain_exchange_rate**
+Input: { topic: "official_vs_market"|"buy_vs_sell"|"mid_market"|"fees_and_spread"|
+  "freshness"|"cross_rate"|"weekend_rate"|"currency_alias"|"provider_difference",
+  context?: { base?: string, quote?: string, provider?: string } }
+Output: plain-language explanation suitable for including in a user-facing answer
+
+### Resources (read-only)
+
+openrates://docs/quickstart — Getting started
+openrates://docs/tool-selection — Which tool to use for which task
+openrates://docs/rate-types — official_reference vs market rates explained
+openrates://docs/freshness — Freshness classes and thresholds
+openrates://docs/errors — Error codes and recovery suggestions
+openrates://providers — Configured providers and their capabilities
+openrates://currencies — All supported currencies with metadata
+openrates://capabilities — Server and provider capability summary
+openrates://license — License and attribution
+
+### Server instructions (summary)
+
+Use OpenRates whenever a task requires a current or historical exchange rate.
+Do not use model memory for rates. Use official mode for accounting, invoices, reporting.
+Always mention the effective date and rate type. Never describe an official daily rate as
+live. Ask for clarification only when the currency itself is ambiguous.
+
+## REST API
+
+All endpoints under /v1. Default port 3000.
+
+### Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | /v1/rates | Exchange rate for a pair |
+| GET | /v1/rates/series | Historical time series |
+| POST | /v1/convert | Convert an amount |
+| GET | /v1/currencies | List or search currencies |
+| GET | /v1/currencies/:code | One currency |
+| GET | /v1/providers | Configured providers |
+| GET | /v1/providers/:providerId | One provider |
+| GET | /v1/capabilities | Server and provider capabilities |
+| GET | /v1/health | Liveness probe |
+| GET | /v1/ready | Readiness probe |
+| GET | /openapi.json | OpenAPI 3.1 document |
+| GET | /docs | Interactive API reference |
+
+### Example requests
+
+```bash
+# Get a rate
+curl "http://localhost:3000/v1/rates?base=USD&quote=EUR&date=latest"
+
+# Convert an amount
+curl -X POST http://localhost:3000/v1/convert \
+  -H "content-type: application/json" \
+  -d '{"amount":"1000.00","from":"USD","to":"EUR","mode":"official"}'
+
+# Historical series
+curl "http://localhost:3000/v1/rates/series?base=USD&quote=EUR&startDate=2026-01-01&endDate=2026-03-31"
+
+# Search currencies
+curl "http://localhost:3000/v1/currencies?query=riyal"
+```
+
+### Response envelope
+
+Success:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "requestId": "req_...",
+  "generatedAt": "2026-06-15T20:00:00.000Z"
+}
+```
+
+Failure:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNSUPPORTED_CURRENCY",
+    "message": "The currency \"XYZ\" is not supported.",
+    "retryable": false,
+    "suggestion": "Use a valid ISO 4217 currency code."
+  },
+  "requestId": "req_..."
+}
+```
+
+### Response detail levels
+
+compact — Rate, effectiveDate, provider, main warning. Minimal payload.
+standard (default) — Adds confidence, freshnessClass, calculationMethod, all warnings.
+full — Adds all timestamps, cache metadata, route decision, inverse rate, confidence factors.
+
+### Error codes
+
+| Code | Retryable | Meaning |
+|---|---|---|
+| INVALID_REQUEST | false | Malformed request body or query |
+| INVALID_AMOUNT | false | Amount is not a valid decimal string |
+| INVALID_DATE | false | Date is not ISO 8601 or "latest" |
+| AMBIGUOUS_CURRENCY | false | Name matches multiple currencies; details.candidates lists them |
+| UNSUPPORTED_CURRENCY | false | Currency not found in catalogue |
+| UNSUPPORTED_PAIR | false | Provider does not support this pair |
+| UNSUPPORTED_MODE | false | Provider does not support the requested mode |
+| UNSUPPORTED_DATE_RANGE | false | Range exceeds the configured maximum |
+| PROVIDER_NOT_CONFIGURED | false | Requested provider is not registered |
+| PROVIDER_AUTHENTICATION_FAILED | false | Provider rejected the API key |
+| PROVIDER_RATE_LIMITED | true | Provider returned 429 |
+| PROVIDER_TIMEOUT | true | Provider did not respond in time |
+| PROVIDER_UNAVAILABLE | true | Provider returned 5xx or is unreachable |
+| RATE_NOT_AVAILABLE | false | No provider has data for this pair |
+| RATE_TOO_STALE | false | Rate is older than maxAgeSeconds |
+| STRICT_DATE_NOT_AVAILABLE | false | No rate published for exact date; use previous_available |
+| FALLBACK_NOT_ALLOWED | false | Primary failed but allowFallback is false |
+| CACHE_ERROR | true | Cache read or write failed |
+| INTERNAL_ERROR | false | Unexpected server error |
+
+## Freshness classification
+
+### Time fields
+
+effectiveDate — The date the rate applies to. Always present.
+observedAt — When a market value was observed. Only from providers that supply it.
+publishedAt — When the provider published the value. Only from providers that supply it.
+retrievedAt — When OpenRates fetched it. Always recorded.
+
+### Freshness classes
+
+live — A market rate observed inside the live threshold.
+recent — A market rate observed inside the recent threshold.
+latest_available — The most current value the provider has, from today.
+latest_business_day — The latest value from an earlier business day (weekend or holiday).
+historical_exact_date — The published value for the exact requested date.
+historical_previous_available_date — The previous published value when the exact date had none.
+stale — Older than the allowed age. Must not be treated as current.
+unknown — No timestamp from the provider; liveness cannot be proven.
+
+### isLive: true conditions (all must hold)
+
+1. Provider explicitly supports intraday rates (capabilities.supportsIntraday = true).
+2. Provider supplies a reliable observedAt or publishedAt timestamp.
+3. The rate's age is within OPENRATES_LIVE_THRESHOLD_SECONDS (default 300).
+4. The rate type is market data, not official_reference.
+
+Official daily reference rates never satisfy these conditions.
+
+### Default thresholds
+
+OPENRATES_LIVE_THRESHOLD_SECONDS=300
+OPENRATES_RECENT_THRESHOLD_SECONDS=3600
+
+## Confidence score
+
+Range: 0.0 to 1.0.
+Labels: high (>=0.85), medium (>=0.6), low (<0.6).
+
+Weights:
+- Provider trust: 40%
+- Freshness match for use case: 20%
+- Source timestamp present: 15%
+- Provider health: 10%
+- Direct pair (not cross or inverse): 10%
+- Cross-provider agreement: 5%
+
+Stale rates are capped at 0.59 (below medium threshold).
+Computed cross-rates reduce confidence.
+Provider disagreement above OPENRATES_PROVIDER_DISAGREEMENT_PERCENT triggers a warning and
+reduces confidence.
+
+## Decimal arithmetic
+
+All monetary calculations use Decimal.js at 50-digit precision. Native JavaScript
+floating-point is never used in monetary paths.
+
+Rounding mode: half-even (banker's rounding).
+Rounding target: target currency minor units (e.g., 2 for USD, 0 for JPY).
+If minor units are unknown, 2 is used with a warning.
+
+Fee order: gross amount → spread percentage → percentage fee → fixed fee → round.
+
+Rates and amounts are strings in JSON responses. Never parse them as JavaScript numbers.
+
+## Provider contract
+
+Every adapter implements ExchangeRateProvider:
+
+capabilities() → ProviderCapabilities
+  supportedModes: ("official"|"market")[]
+  supportedRateTypes: RateType[]
+  supportsHistorical: boolean
+  supportsTimeSeries: boolean
+  supportsIntraday: boolean
+  supportsProviderTimestamp: boolean
+  requiresApiKey: boolean
+  estimatedUpdateFrequencySeconds?: number
+  supportedCurrencies?: string[]
+
+healthCheck() → ProviderHealth
+  status: "healthy"|"degraded"|"unavailable"
+  checkedAt: string (ISO 8601)
+  latencyMs?: number
+  lastSuccessfulRequestAt?: string
+  message?: string
+
+getLatestRate(input) → ProviderRate
+  baseCurrency, quoteCurrency, rate (decimal string), rateType,
+  effectiveDate, calculationMethod, providerId,
+  observedAt?, publishedAt?, sourceIds?, metadata?
+
+getHistoricalRate(input) → ProviderRate
+  Same as getLatestRate plus datePolicy handling.
+  If datePolicy is "strict" and date has no rate: throw STRICT_DATE_NOT_AVAILABLE.
+  If datePolicy is "previous_available": return prior date and report actual effectiveDate.
+
+getTimeSeries(input) → ProviderTimeSeries
+  baseCurrency, quoteCurrency, startDate, endDate, rateType, providerId,
+  points: { date, rate, filled }[]
+
+listCurrencies() → ProviderCurrency[]
+  code, name
+
+normalizeError(error) → OpenRatesError
+  Must map timeout → PROVIDER_TIMEOUT
+  429 → PROVIDER_RATE_LIMITED
+  5xx → PROVIDER_UNAVAILABLE
+  auth failure → PROVIDER_AUTHENTICATION_FAILED
+  unsupported pair → UNSUPPORTED_PAIR
+
+Adapter requirements: request timeouts, retry only safe GETs with bounded exponential
+backoff, never log API keys, include provider attribution on every response, pass the
+reusable contract test suite from @openrates/provider-interface/testing with fixtures.
+
+## Frankfurter provider (default)
+
+Publishes ECB official reference rates. Free, no API key required.
+
+supportedModes: ["official"]
+supportedRateTypes: ["official_reference"]
+supportsHistorical: true
+supportsTimeSeries: true
+supportsIntraday: false
+supportsProviderTimestamp: false
+estimatedUpdateFrequencySeconds: 86400
+
+Weekend/holiday behavior:
+- datePolicy "previous_available" (default): returns prior business day, reports actual date
+- datePolicy "strict": returns STRICT_DATE_NOT_AVAILABLE with suggestion
+
+Configuration:
+OPENRATES_DEFAULT_PROVIDER=frankfurter
+FRANKFURTER_BASE_URL=https://api.frankfurter.dev
+FRANKFURTER_TIMEOUT_MS=5000
+
+Known limitations: no intraday, no bid/ask, rates are midpoints, limited currency
+coverage, no provider timestamp.
+
+## Cache layer
+
+Default: in-memory LRU, 10,000 items.
+Optional: Redis via REDIS_URL.
+
+TTLs:
+- Latest official rate: 15 minutes (900 s)
+- Historical rate: 7 days (604800 s)
+- Historical series: 1 day (86400 s)
+- Provider capabilities: 1 hour (3600 s)
+- Provider health: 30 seconds
+- Currency metadata: 24 hours (86400 s)
+
+Cache keys include: provider, mode, base, quote, date.
+Cache response metadata: hit (bool), storedAt (ISO 8601), ageSeconds.
+
+## Currency metadata
+
+Catalogue covers ISO 4217 active and retired currencies.
+
+Each entry: code, numericCode?, name, minorUnits, status, countries, symbols, aliases,
+introducedAt?, retiredAt?, replacedBy?.
+
+Features:
+- Lookup by code (exact)
+- Lookup by name (case-insensitive)
+- Lookup by alias (e.g., "buck" → USD, "euro" → EUR)
+- Lookup by country name (e.g., "Japan" → JPY)
+- Ambiguity detection ("dollar" → [USD, CAD, AUD, ...])
+- Retired currency guidance (TRL → TRY with retiredAt and replacedBy)
+- CNY / CNH distinction for onshore/offshore
+
+## Configuration reference
+
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+
+OPENRATES_DEFAULT_PROVIDER=frankfurter
+OPENRATES_PROVIDER_ORDER=frankfurter
+OPENRATES_ALLOW_FALLBACK=true
+
+FRANKFURTER_BASE_URL=https://api.frankfurter.dev
+FRANKFURTER_TIMEOUT_MS=5000
+
+OPENRATES_CACHE_DRIVER=memory
+OPENRATES_MEMORY_CACHE_MAX_ITEMS=10000
+REDIS_URL=
+
+OPENRATES_LIVE_THRESHOLD_SECONDS=300
+OPENRATES_RECENT_THRESHOLD_SECONDS=3600
+OPENRATES_PROVIDER_DISAGREEMENT_PERCENT=1.0
+
+OPENRATES_LOG_LEVEL=info
+OPENRATES_LOG_AMOUNTS=false
+OPENRATES_TELEMETRY=false
+
+OPENRATES_API_AUTH_ENABLED=false
+OPENRATES_API_KEYS=
+
+OPENRATES_RATE_LIMIT_ENABLED=false
+OPENRATES_RATE_LIMIT_PER_MINUTE=120
+
+OPENRATES_MAX_SERIES_POINTS=2000
+OPENRATES_MAX_DAILY_RANGE_YEARS=5
+
+Market provider convention:
+OPENRATES_PROVIDER_<NAME>_API_KEY=
+OPENRATES_PROVIDER_<NAME>_BASE_URL=
+OPENRATES_PROVIDER_<NAME>_ENABLED=false

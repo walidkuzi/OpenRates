@@ -38,9 +38,10 @@ Implemented so far:
   back visibly, exposing end-to-end conversion (`@openrates/router`)
 - REST API on Fastify with standard envelopes, request IDs, security headers, optional auth
   and rate limiting, OpenAPI 3.1, and interactive docs (`@openrates/api`)
+- MCP server with six tools, nine resources, agent instructions, and both stdio and
+  Streamable HTTP transports (`@openrates/mcp`)
 
-Planned: MCP server with six tools, TypeScript SDK, CLI, documentation site, and a web
-playground.
+Planned: TypeScript SDK, CLI, documentation site, and a web playground.
 
 ## Intended usage
 
@@ -87,6 +88,7 @@ packages/
   router/              Provider registry, selection, fallback, and the rate engine
 apps/
   api/                 Fastify REST API with OpenAPI and interactive docs
+  mcp/                 MCP server (stdio + Streamable HTTP) exposing six tools
 ```
 
 Additional packages and applications are added as later phases land.

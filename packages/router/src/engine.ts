@@ -5,6 +5,8 @@ import {
   cacheAgeSeconds,
 } from "@openrates/cache";
 import {
+  Decimal,
+  type DecimalValue,
   type FeeInput,
   type FreshnessResult,
   buildNormalizedRate,
@@ -33,8 +35,12 @@ import { ProviderHealthTracker } from "./health";
 import type { ProviderRegistry, RegistryEntry } from "./registry";
 import type {
   CacheInfo,
+  CompareQuery,
+  CompareResult,
   ConversionResult,
   ConvertQuery,
+  ProviderFailure,
+  ProviderQuote,
   RateQuery,
   RateResult,
   SeriesPoint,
@@ -136,6 +142,20 @@ function applyFill(
     }
   }
   return output;
+}
+
+function medianRate(rates: string[]): DecimalValue {
+  const sorted = rates.map((rate) => new Decimal(rate)).sort((a, b) => a.comparedTo(b));
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) {
+    return sorted[middle] ?? new Decimal(0);
+  }
+  const lower = sorted[middle - 1];
+  const upper = sorted[middle];
+  if (lower === undefined || upper === undefined) {
+    return new Decimal(0);
+  }
+  return lower.plus(upper).div(2);
 }
 
 export class RateEngine {
@@ -411,6 +431,88 @@ export class RateEngine {
       rateType: series.rateType,
       points: applyFill(series.points, query.startDate, query.endDate, query.fillPolicy ?? "none"),
       cache: cacheInfo,
+    };
+  }
+
+  async compareProviders(query: CompareQuery, disagreementPercent = 1): Promise<CompareResult> {
+    const base = this.resolveCurrencyCode(query.base);
+    const quote = this.resolveCurrencyCode(query.quote);
+    const mode = this.resolveMode(query);
+    const isHistorical = query.date !== undefined && query.date !== "latest";
+
+    let candidates = await this.selectCandidates(mode, isHistorical, undefined);
+    if (query.providers !== undefined && query.providers.length > 0) {
+      const allowed = new Set(query.providers);
+      candidates = candidates.filter((entry) => allowed.has(entry.provider.id));
+    }
+    if (query.maxProviders !== undefined) {
+      candidates = candidates.slice(0, query.maxProviders);
+    }
+
+    const settled = await Promise.allSettled(
+      candidates.map((entry) =>
+        this.getRate({
+          base,
+          quote,
+          date: query.date,
+          mode,
+          provider: entry.provider.id,
+          allowFallback: false,
+          now: query.now,
+        }),
+      ),
+    );
+
+    const results: ProviderQuote[] = [];
+    const failures: ProviderFailure[] = [];
+    candidates.forEach((entry, index) => {
+      const outcome = settled[index];
+      if (outcome === undefined) {
+        return;
+      }
+      if (outcome.status === "fulfilled") {
+        const rate = outcome.value.rate;
+        results.push({
+          provider: rate.providerId,
+          rate: rate.rate,
+          rateType: rate.rateType,
+          effectiveDate: rate.effectiveDate,
+          freshnessClass: rate.freshnessClass,
+        });
+      } else {
+        const error: unknown = outcome.reason;
+        failures.push({
+          provider: entry.provider.id,
+          code: error instanceof OpenRatesError ? error.code : "INTERNAL_ERROR",
+          message: error instanceof Error ? error.message : "Unknown error.",
+        });
+      }
+    });
+
+    const date = query.date ?? "latest";
+    if (results.length === 0) {
+      return { base, quote, date, results, failures, disagreement: false };
+    }
+
+    const median = medianRate(results.map((item) => item.rate));
+    let maxDifference = new Decimal(0);
+    for (const item of results) {
+      const difference = new Decimal(item.rate).minus(median).abs().div(median).mul(100);
+      item.differencePercent = difference.toDecimalPlaces(4).toString();
+      if (difference.greaterThan(maxDifference)) {
+        maxDifference = difference;
+      }
+    }
+
+    return {
+      base,
+      quote,
+      date,
+      results,
+      failures,
+      median: median.toString(),
+      maxDifferencePercent: maxDifference.toDecimalPlaces(4).toString(),
+      disagreement: maxDifference.greaterThan(disagreementPercent),
     };
   }
 
